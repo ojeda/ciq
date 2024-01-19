@@ -1,0 +1,1563 @@
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  #push:
+
+jobs:
+  ci:
+    runs-on: ubuntu-22.04
+    container: ${{ matrix.container }}
+
+    timeout-minutes: 70
+
+    strategy:
+      fail-fast: false
+      matrix:
+        tree:
+          # Dev.
+          #- rust-dev
+
+          # `rust-next`.
+          # ojeda/rust-next
+          - rust-next
+
+          # `rust-fixes`.
+          # ojeda/rust-fixes
+          - rust-fixes
+
+          # 6.11 Next.
+          - next
+
+          # 6.10 Mainline.
+          - torvalds
+
+          # 6.9 Stable.
+          - stable-rc/queue/6.9
+          - stable-rc/linux-6.9.y
+          - stable/linux-6.9.y
+
+          # 6.8 Old Stable.
+          - stable-rc/queue/6.8
+          - stable-rc/linux-6.8.y
+          - stable/linux-6.8.y
+
+          # 6.6 LTS.
+          - stable-rc/queue/6.6
+          - stable-rc/linux-6.6.y
+          - stable/linux-6.6.y
+
+          # 6.1 LTS.
+          - stable-rc/queue/6.1
+          - stable-rc/linux-6.1.y
+          - stable/linux-6.1.y
+
+        arch:
+          - x86_64
+          - loongarch64
+          - arm64
+          - riscv64
+          # riscv32
+
+        toolchain:
+          # From the current Docker image (https://packages.ubuntu.com/jammy/llvm).
+          - llvm
+
+          # `distro` uses the one from the current distribution, i.e. using
+          # the relevant package manager.
+          # distro
+
+          # From LLVM apt (https://apt.llvm.org).
+          # llvm-15-llvm-apt
+          # llvm-16-llvm-apt
+          # llvm-17-llvm-apt
+          # llvm-18-llvm-apt
+
+          # From kernel.org (https://mirrors.edge.kernel.org/pub/tools/llvm/).
+          # llvm-15-kernel
+          # llvm-16-kernel
+          # llvm-17-kernel
+          # llvm-18-kernel
+
+          # From kernel.org, LLVM+Rust combined toolchains, matching LLVMs (https://mirrors.edge.kernel.org/pub/tools/llvm/rust/).
+          # llvmcombined-14-rust-1620-kernel        (6.1  LTS)
+          # llvmcombined-17-rust-1730-kernel        (6.6  LTS)
+          # llvmcombined-17-rust-1741-kernel        (6.8  Old Stable)
+          # llvmcombined-17-rust-1760-kernel        (6.9  Stable)
+          # llvmcombined-18-rust-1780-kernel        (6.10 Mainline)
+          # llvmcombined-18-rust-1780-kernel        (6.11 Next)
+
+          # From kernel.org, LLVM+Rust combined toolchains, latest LLVMs within the same major (https://mirrors.edge.kernel.org/pub/tools/llvm/rust/).
+          # llvmcombined-14latest-rust-1620-kernel  (6.1  LTS)
+          # llvmcombined-17latest-rust-1730-kernel  (6.6  LTS)
+          # llvmcombined-17latest-rust-1741-kernel  (6.8  Old Stable)
+          # llvmcombined-17latest-rust-1760-kernel  (6.9  Stable)
+          # llvmcombined-18latest-rust-1780-kernel  (6.10 Mainline)
+          # llvmcombined-18latest-rust-1780-kernel  (6.11 Next)
+
+          # rustc_codegen_gcc
+
+        config:
+          - defconfig
+          - defconfig+debug
+
+        output:
+          - src
+          # subdir
+          # outside
+
+        rust:
+          # `rustup` means "download from `rustup` the version in `scripts/min-script-version.sh`",
+          # i.e. by default we test the minimum version supported by the kernel.
+          #
+          # `rustup-stable` tests, instead, the latest stable Rust version released. In other words,
+          # the other end of the window of stable releases we support.
+          - rustup
+          # rustup-stable
+          # rustup-beta
+          # rustup-nightly
+
+          # `distro` uses the one from the current distribution, i.e. using
+          # the relevant package manager.
+          # distro
+
+          # From kernel.org, LLVM+Rust combined toolchains, matching LLVMs (https://mirrors.edge.kernel.org/pub/tools/llvm/rust/).
+          # llvmcombined-14-rust-1620-kernel        (6.1  LTS)
+          # llvmcombined-17-rust-1730-kernel        (6.6  LTS)
+          # llvmcombined-17-rust-1741-kernel        (6.8  Old Stable)
+          # llvmcombined-17-rust-1760-kernel        (6.9  Stable)
+          # llvmcombined-18-rust-1780-kernel        (6.10 Mainline)
+          # llvmcombined-18-rust-1780-kernel        (6.11 Next)
+
+          # From kernel.org, LLVM+Rust combined toolchains, latest LLVMs within the same major (https://mirrors.edge.kernel.org/pub/tools/llvm/rust/).
+          # llvmcombined-14latest-rust-1620-kernel  (6.1  LTS)
+          # llvmcombined-17latest-rust-1730-kernel  (6.6  LTS)
+          # llvmcombined-17latest-rust-1741-kernel  (6.8  Old Stable)
+          # llvmcombined-17latest-rust-1760-kernel  (6.9  Stable)
+          # llvmcombined-18latest-rust-1780-kernel  (6.10 Mainline)
+          # llvmcombined-18latest-rust-1780-kernel  (6.11 Next)
+
+          # disabled
+
+        bindgen:
+          # `cargo` means "`cargo install` the version in `scripts/min-script-version.sh`",
+          # i.e. by default we test the minimum version supported by the kernel.
+          #
+          # `cargo-latest` tests, instead, the latest stable `bindgen` version released.
+          - cargo
+          # cargo-latest
+
+          # `distro` uses the one from the current distribution, i.e. using
+          # the relevant package manager.
+          # distro
+
+        container:
+          - ghcr.io/rust-for-linux/ci
+          # archlinux
+          # debian:testing
+          # debian:sid
+          # fedora
+          # gentoo/stage3
+          # nixos/nix
+          # opensuse/tumbleweed
+
+        include:
+          # `tree: ojeda/rust-window`.
+          - tree: ojeda/rust-window
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `tree: ojeda/rust-window`.
+          - tree: ojeda/rust-window
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup-stable
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `tree: ojeda/rust-window`.
+          - tree: ojeda/rust-window
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup-beta
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `tree: ojeda/rust-window`.
+          - tree: ojeda/rust-window
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup-nightly
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `tree: ojeda/rust-simplify-rusttest`.
+          - tree: ojeda/rust-simplify-rusttest
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-15-llvm-apt`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-15-llvm-apt
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-16-llvm-apt`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-16-llvm-apt
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-17-llvm-apt`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-17-llvm-apt
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-18-llvm-apt`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-18-llvm-apt
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-15-kernel`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-15-kernel
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-16-kernel`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-16-kernel
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-17-kernel`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-17-kernel
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: llvm-18-kernel`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-18-kernel
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `toolchain: rustc_codegen_gcc`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: rustc_codegen_gcc
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          ## `tree: ojeda/rust-next`, `output: subdir`.
+          #- tree: ojeda/rust-next
+          #  arch: x86_64
+          #  toolchain: llvm
+          #  config: defconfig+debug
+          #  output: subdir
+          #  rust: rustup
+          #  bindgen: cargo
+          #  container: ghcr.io/rust-for-linux/ci
+
+          ## `tree: ojeda/rust-next`, `output: outside`.
+          #- tree: ojeda/rust-next
+          #  arch: x86_64
+          #  toolchain: llvm
+          #  config: defconfig+debug
+          #  output: outside
+          #  rust: rustup
+          #  bindgen: cargo
+          #  container: ghcr.io/rust-for-linux/ci
+
+          # `output: subdir`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: subdir
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `output: outside`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: outside
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `tree: ojeda/rust-next, rust: rustup-beta`.
+          #- tree: ojeda/rust-next
+          #  arch: x86_64
+          #  toolchain: llvm
+          #  config: defconfig+debug
+          #  output: src
+          #  rust: rustup-beta
+          #  bindgen: cargo
+          #  container: ghcr.io/rust-for-linux/ci
+
+          # `tree: ojeda/rust-next, rust: rustup-nightly`.
+          #- tree: ojeda/rust-next
+          #  arch: x86_64
+          #  toolchain: llvm
+          #  config: defconfig+debug
+          #  output: src
+          #  rust: rustup-nightly
+          #  bindgen: cargo
+          #  container: ghcr.io/rust-for-linux/ci
+
+          # `rust: rustup-beta`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup-beta
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust: rustup-nightly`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup-nightly
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `tree: torvalds, rust: rustup-beta`.
+          - tree: torvalds
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup-beta
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `tree: torvalds, rust: rustup-nightly`.
+          - tree: torvalds
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup-nightly
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # To test the LLVM+Rust combined toolchains, we test each supported kernel version with
+          # both LLVM and Rust from the package meant for that kernel version, which is what those
+          # toolchains are intended for.
+
+          # First, do it for the combined toolchains with matching LLVMs.
+
+          # `rust & toolchain: llvmcombined-14-rust-1620-kernel` (6.1 LTS).
+          - tree: stable/linux-6.1.y
+            arch: x86_64
+            toolchain: llvmcombined-14-rust-1620-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-14-rust-1620-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-17-rust-1730-kernel` (6.6 LTS).
+          - tree: stable/linux-6.6.y
+            arch: x86_64
+            toolchain: llvmcombined-17-rust-1730-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-17-rust-1730-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-17-rust-1741-kernel` (6.8 Old Stable).
+          - tree: stable/linux-6.8.y
+            arch: x86_64
+            toolchain: llvmcombined-17-rust-1741-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-17-rust-1741-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-17-rust-1760-kernel` (6.9 Stable).
+          - tree: stable/linux-6.9.y
+            arch: x86_64
+            toolchain: llvmcombined-17-rust-1760-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-17-rust-1760-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-18-rust-1780-kernel` (6.10 Mainline).
+          - tree: torvalds
+            arch: x86_64
+            toolchain: llvmcombined-18-rust-1780-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-18-rust-1780-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-18-rust-1780-kernel` (6.11 Next).
+          - tree: next
+            arch: x86_64
+            toolchain: llvmcombined-18-rust-1780-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-18-rust-1780-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # Then, again for the latest LLVM ones (they may happen to be the same in some cases).
+
+          # `rust & toolchain: llvmcombined-14latest-rust-1620-kernel` (6.1 LTS).
+          - tree: stable/linux-6.1.y
+            arch: x86_64
+            toolchain: llvmcombined-14latest-rust-1620-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-14latest-rust-1620-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-17latest-rust-1730-kernel` (6.6 LTS).
+          - tree: stable/linux-6.6.y
+            arch: x86_64
+            toolchain: llvmcombined-17latest-rust-1730-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-17latest-rust-1730-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-17latest-rust-1741-kernel` (6.8 Old Stable).
+          - tree: stable/linux-6.8.y
+            arch: x86_64
+            toolchain: llvmcombined-17latest-rust-1741-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-17latest-rust-1741-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-17latest-rust-1760-kernel` (6.9 Stable).
+          - tree: stable/linux-6.9.y
+            arch: x86_64
+            toolchain: llvmcombined-17latest-rust-1760-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-17latest-rust-1760-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-18latest-rust-1780-kernel` (6.10 Mainline).
+          - tree: torvalds
+            arch: x86_64
+            toolchain: llvmcombined-18latest-rust-1780-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-18latest-rust-1780-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust & toolchain: llvmcombined-18latest-rust-1780-kernel` (6.11 Next).
+          - tree: next
+            arch: x86_64
+            toolchain: llvmcombined-18latest-rust-1780-kernel
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-18latest-rust-1780-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # On top of that, we also test "mixing" them, i.e.:
+          #
+          #   a) Only LLVM from the kernel.org package, with Rust from `rustup`.
+          #   b) Only Rust from the kernel.org package, with LLVM from Ubuntu.
+
+          # `toolchain: llvmcombined-18-rust-1780-kernel` (i.e. "a)" above).
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvmcombined-18-rust-1780-kernel
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust: llvmcombined-18-rust-1780-kernel` (i.e. "b)" above).
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: llvmcombined-18-rust-1780-kernel
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `rust: disabled`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig
+            output: src
+            rust: disabled
+            bindgen: cargo
+            container: ghcr.io/rust-for-linux/ci
+
+          # `bindgen: cargo-latest`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm
+            config: defconfig+debug
+            output: src
+            rust: rustup
+            bindgen: cargo-latest
+            container: ghcr.io/rust-for-linux/ci
+
+          # `container: archlinux`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-distro
+            config: defconfig+debug
+            output: src
+            rust: distro
+            bindgen: distro
+            container: archlinux
+
+          # `container: debian:testing`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-distro
+            config: defconfig+debug
+            output: src
+            rust: distro
+            bindgen: distro
+            container: debian:testing
+
+          # `container: debian:sid`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-distro
+            config: defconfig+debug
+            output: src
+            rust: distro
+            bindgen: distro
+            container: debian:sid
+
+          # `container: fedora`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-distro
+            config: defconfig+debug
+            output: src
+            rust: distro
+            bindgen: distro
+            container: fedora
+
+          # `container: gentoo/stage3`.
+          #
+          # Avoid `bindgen: distro` since it takes too long.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-distro
+            config: defconfig+debug
+            output: src
+            rust: distro
+            bindgen: cargo
+            container: gentoo/stage3
+
+          # `container: nixos/nix`.
+          # - tree: rust-next
+          #   arch: x86_64
+          #   toolchain: llvm-distro
+          #   config: defconfig+debug
+          #   output: src
+          #   rust: distro
+          #   bindgen: distro
+          #   container: nixos/nix
+
+          # `container: opensuse/tumbleweed`.
+          - tree: rust-next
+            arch: x86_64
+            toolchain: llvm-distro
+            config: defconfig+debug
+            output: src
+            rust: distro
+            bindgen: distro
+            container: opensuse/tumbleweed
+
+        exclude:
+          # `loongarch64` landed in Linux 6.8.
+          - tree: stable-rc/queue/6.6
+            arch: loongarch64
+          - tree: stable-rc/linux-6.6.y
+            arch: loongarch64
+          - tree: stable/linux-6.6.y
+            arch: loongarch64
+
+          - tree: stable-rc/queue/6.1
+            arch: loongarch64
+          - tree: stable-rc/linux-6.1.y
+            arch: loongarch64
+          - tree: stable/linux-6.1.y
+            arch: loongarch64
+
+          # `arm64` landed in Linux 6.9.
+          - tree: stable-rc/queue/6.8
+            arch: arm64
+          - tree: stable-rc/linux-6.8.y
+            arch: arm64
+          - tree: stable/linux-6.8.y
+            arch: arm64
+
+          - tree: stable-rc/queue/6.6
+            arch: arm64
+          - tree: stable-rc/linux-6.6.y
+            arch: arm64
+          - tree: stable/linux-6.6.y
+            arch: arm64
+
+          - tree: stable-rc/queue/6.1
+            arch: arm64
+          - tree: stable-rc/linux-6.1.y
+            arch: arm64
+          - tree: stable/linux-6.1.y
+            arch: arm64
+
+          # `riscv64` landed in Linux 6.10.
+          - tree: rust-dev
+            arch: riscv64
+          - tree: rust-next
+            arch: riscv64
+          - tree: rust-fixes
+            arch: riscv64
+
+          - tree: stable-rc/queue/6.9
+            arch: riscv64
+          - tree: stable-rc/linux-6.9.y
+            arch: riscv64
+          - tree: stable/linux-6.9.y
+            arch: riscv64
+
+          - tree: stable-rc/queue/6.8
+            arch: riscv64
+          - tree: stable-rc/linux-6.8.y
+            arch: riscv64
+          - tree: stable/linux-6.8.y
+            arch: riscv64
+
+          - tree: stable-rc/queue/6.6
+            arch: riscv64
+          - tree: stable-rc/linux-6.6.y
+            arch: riscv64
+          - tree: stable/linux-6.6.y
+            arch: riscv64
+
+          - tree: stable-rc/queue/6.1
+            arch: riscv64
+          - tree: stable-rc/linux-6.1.y
+            arch: riscv64
+          - tree: stable/linux-6.1.y
+            arch: riscv64
+
+    steps:
+      # Setup variables.
+      - run: |
+          echo 'BOOT_TEST=true' >> $GITHUB_ENV
+          echo "JOBS=-j$(($(nproc) + 1))" >> $GITHUB_ENV
+
+      - if: matrix.container != 'ghcr.io/rust-for-linux/ci'
+        run: |
+          echo 'BOOT_TEST=false' >> $GITHUB_ENV
+
+      - if: matrix.arch == 'x86_64'
+        run: |
+          echo 'MAKE_ARCH=ARCH=x86_64' >> $GITHUB_ENV
+          echo 'IMAGE_PATH=arch/x86/boot/bzImage' >> $GITHUB_ENV
+          echo 'QEMU_ARCH=x86_64' >> $GITHUB_ENV
+          echo 'QEMU_ARGS=-append console=ttyS0' >> $GITHUB_ENV
+      - if: matrix.arch == 'loongarch64'
+        run: |
+          echo 'BOOT_TEST=false' >> $GITHUB_ENV
+          echo 'MAKE_ARCH=ARCH=loongarch' >> $GITHUB_ENV
+          echo 'MAKE_CROSS_COMPILE=CROSS_COMPILE=loongarch64-linux-gnu-' >> $GITHUB_ENV
+          echo 'IMAGE_PATH=arch/loongarch/boot/vmlinuz.efi' >> $GITHUB_ENV
+          echo 'QEMU_ARCH=loongarch64' >> $GITHUB_ENV
+          echo 'QEMU_ARGS=-machine virt -cpu la464 -bios /root/qemu-binary/QEMU_EFI.fd -append console=ttyS0,115200' >> $GITHUB_ENV
+      - if: matrix.arch == 'arm64'
+        run: |
+          echo 'MAKE_ARCH=ARCH=arm64' >> $GITHUB_ENV
+          echo 'MAKE_CROSS_COMPILE=CROSS_COMPILE=aarch64-linux-gnu-' >> $GITHUB_ENV
+          echo 'IMAGE_PATH=arch/arm64/boot/Image.gz' >> $GITHUB_ENV
+          echo 'QEMU_ARCH=aarch64' >> $GITHUB_ENV
+          echo 'QEMU_ARGS=-machine virt -cpu cortex-a53' >> $GITHUB_ENV
+      - if: matrix.arch == 'riscv64'
+        run: |
+          echo 'MAKE_ARCH=ARCH=riscv' >> $GITHUB_ENV
+          echo 'MAKE_CROSS_COMPILE=CROSS_COMPILE=riscv64-linux-gnu-' >> $GITHUB_ENV
+          echo 'IMAGE_PATH=arch/riscv/boot/Image' >> $GITHUB_ENV
+          echo 'QEMU_ARCH=riscv64' >> $GITHUB_ENV
+          echo 'QEMU_ARGS=-machine virt -cpu rv64 -bios /usr/lib/riscv64-linux-gnu/opensbi/generic/fw_jump.elf' >> $GITHUB_ENV
+      - if: matrix.arch == 'riscv32'
+        run: |
+          echo 'MAKE_ARCH=ARCH=riscv' >> $GITHUB_ENV
+          echo 'MAKE_CROSS_COMPILE=CROSS_COMPILE=riscv32-linux-gnu-' >> $GITHUB_ENV
+          echo 'IMAGE_PATH=arch/riscv/boot/Image' >> $GITHUB_ENV
+          echo 'QEMU_ARCH=riscv32' >> $GITHUB_ENV
+          echo 'QEMU_ARGS=-machine virt -cpu rv32 -bios /usr/lib/riscv32-linux-gnu/opensbi/generic/fw_jump.elf' >> $GITHUB_ENV
+
+      - if: startsWith(matrix.toolchain, 'llvm')
+        run: echo 'MAKE_TOOLCHAIN=LLVM=1' >> $GITHUB_ENV
+
+      - if: matrix.toolchain == 'llvm-15-llvm-apt'
+        run: echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=15' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvm-16-llvm-apt'
+        run: echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=16' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvm-17-llvm-apt'
+        run: echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvm-18-llvm-apt'
+        run: echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=18' >> $GITHUB_ENV
+
+      - if: matrix.toolchain == 'llvm-15-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=15' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=15.0.7' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvm-16-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=16' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=16.0.6' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvm-17-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=17.0.6' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvm-18-kernel' || matrix.arch == 'loongarch64'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=18' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=18.1.8' >> $GITHUB_ENV
+
+      # If we are using LLVM from a LLVM+Rust combined toolchain from kernel.org, we also need a
+      # Rust version here (`COMBINED_TOOLCHAIN_RUST_VERSION`) to be able to download the package
+      # (even if a different Rust is used). This variable should not be used for anything else.
+      - if: matrix.toolchain == 'llvmcombined-14-rust-1620-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=14' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=14.0.5' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.62.0' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvmcombined-14latest-rust-1620-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=14' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=14.0.6' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.62.0' >> $GITHUB_ENV
+
+      - if: matrix.toolchain == 'llvmcombined-17-rust-1730-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=17.0.2' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.73.0' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvmcombined-17latest-rust-1730-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.73.0' >> $GITHUB_ENV
+
+      - if: matrix.toolchain == 'llvmcombined-17-rust-1741-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=17.0.4' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.74.1' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvmcombined-17latest-rust-1741-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.74.1' >> $GITHUB_ENV
+
+      - if: matrix.toolchain == 'llvmcombined-17-rust-1760-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.76.0' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvmcombined-17latest-rust-1760-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=17' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.76.0' >> $GITHUB_ENV
+
+      - if: matrix.toolchain == 'llvmcombined-18-rust-1780-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=18' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=18.1.4' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.78.0' >> $GITHUB_ENV
+      - if: matrix.toolchain == 'llvmcombined-18latest-rust-1780-kernel'
+        run: |
+          echo 'LLVM_TOOLCHAIN_VERSION_MAJOR=18' >> $GITHUB_ENV
+          echo 'LLVM_TOOLCHAIN_VERSION=18.1.8' >> $GITHUB_ENV
+          echo 'COMBINED_TOOLCHAIN_RUST_VERSION=1.78.0' >> $GITHUB_ENV
+
+      # If we are using Rust from a LLVM+Rust combined toolchain from kernel.org, we also need a
+      # LLVM version here (`COMBINED_RUST_LLVM_VERSION`) to be able to download the package (even
+      # if a different LLVM is used). This variable should not be used for anything else.
+      - if: matrix.rust == 'llvmcombined-14-rust-1620-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=14.0.5' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.62.0' >> $GITHUB_ENV
+      - if: matrix.rust == 'llvmcombined-14latest-rust-1620-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=14.0.6' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.62.0' >> $GITHUB_ENV
+
+      - if: matrix.rust == 'llvmcombined-17-rust-1730-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=17.0.2' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.73.0' >> $GITHUB_ENV
+      - if: matrix.rust == 'llvmcombined-17latest-rust-1730-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.73.0' >> $GITHUB_ENV
+
+      - if: matrix.rust == 'llvmcombined-17-rust-1741-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=17.0.4' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.74.1' >> $GITHUB_ENV
+      - if: matrix.rust == 'llvmcombined-17latest-rust-1741-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.74.1' >> $GITHUB_ENV
+
+      - if: matrix.rust == 'llvmcombined-17-rust-1760-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.76.0' >> $GITHUB_ENV
+      - if: matrix.rust == 'llvmcombined-17latest-rust-1760-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=17.0.6' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.76.0' >> $GITHUB_ENV
+
+      - if: matrix.rust == 'llvmcombined-18-rust-1780-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=18.1.4' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.78.0' >> $GITHUB_ENV
+      - if: matrix.rust == 'llvmcombined-18latest-rust-1780-kernel'
+        run: |
+          echo 'COMBINED_RUST_LLVM_VERSION=18.1.8' >> $GITHUB_ENV
+          echo 'RUST_TOOLCHAIN_VERSION=1.78.0' >> $GITHUB_ENV
+
+      - if: matrix.output == 'src'
+        run: |
+          echo 'OUTPUT_DIR=linux/' >> $GITHUB_ENV
+          echo 'MAKE_OUT_OF_TREE_KDIR=KDIR=../linux' >> $GITHUB_ENV
+      - if: matrix.output == 'subdir'
+        run: |
+          echo 'MAKE_OUTPUT=O=subdir' >> $GITHUB_ENV
+          echo 'MAKE_OUT_OF_TREE_KDIR=KDIR=../linux/subdir' >> $GITHUB_ENV
+          echo 'OUTPUT_DIR=linux/subdir/' >> $GITHUB_ENV
+      - if: matrix.output == 'outside'
+        run: |
+          echo 'MAKE_OUTPUT=O=/outside' >> $GITHUB_ENV
+          echo 'MAKE_OUT_OF_TREE_KDIR=KDIR=/outside' >> $GITHUB_ENV
+          echo 'OUTPUT_DIR=/outside/' >> $GITHUB_ENV
+
+      # Setup containers.
+      # TODO: move the actual installation to each section.
+      - if: matrix.container == 'archlinux'
+        run: |
+          pacman --noconfirm --sync --refresh bc diffutils git make flex bison llvm clang lld rust rust-src rust-bindgen
+
+      - if: startsWith(matrix.container, 'debian')
+        run: |
+          apt-get -y update
+          apt-get -y install bc file git make flex bison libelf-dev libssl-dev llvm clang lld rustc rust-src bindgen rustfmt rust-clippy
+
+      - if: matrix.container == 'fedora'
+        run: |
+          dnf --assumeyes install bc diffutils file git flex bison elfutils-libelf-devel openssl-devel llvm clang lld rust rust-src bindgen-cli rustfmt clippy
+
+      - if: matrix.container == 'gentoo/stage3'
+        run: |
+          # One option is `emerge --sync >/dev/null`, but `emerge-webrsync` is
+          # supposed to be faster for the first sync, saves on network bandwith
+          # and may be more forgiving of restrictive firewalls.
+          emerge-webrsync
+
+          emerge dev-vcs/git app-arch/gzip app-arch/tar net-misc/curl dev-libs/elfutils
+
+          # Building Rust takes too long, thus use the binary package instead.
+          #
+          # If needed, use `ACCEPT_KEYWORDS='~amd64'` to install "testing" packages.
+          # Syntax for particular versions: `=dev-lang/rust-bin-1.79.0`.
+          ACCEPT_KEYWORDS='~amd64' USE='clippy rust-src rustfmt' emerge dev-lang/rust-bin
+
+          # Building LLVM takes too long. Instead, use a pre-built LLVM we provide.
+          curl --proto '=https' --tlsv1.2 --no-progress-meter --fail https://mirrors.edge.kernel.org/pub/tools/llvm/files/llvm-18.1.8-x86_64.tar.gz | tar --extract --verbose --gzip
+          echo "$PWD/llvm-18.1.8-x86_64/bin" >> $GITHUB_PATH
+          echo "LIBCLANG_PATH=$PWD/llvm-18.1.8-x86_64/lib" >> $GITHUB_ENV
+
+          # Similarly, for `bindgen`, we will provide it ourselves.
+          #emerge dev-util/bindgen
+
+      - if: matrix.container == 'nixos/nix'
+        run: |
+          nix-channel --update
+          # `nixpkgs` is the unstable channel (https://nixos.org/channels/nixpkgs-unstable).
+          # See `nix-channel --list`.
+          nix-env -iA nixpkgs.gnused nixpkgs.diffutils nixpkgs.gawk nixpkgs.curl nixpkgs.flex nixpkgs.bison nixpkgs.elfutils nixpkgs.gnumake nixpkgs.libllvm nixpkgs.clang nixpkgs.lld nixpkgs.rustc nixpkgs.rustfmt nixpkgs.rust-bindgen
+
+          # TODO: for Nix we should do things properly instead. We need to install
+          # the C libraries' headers properly, plus `rustLibSrc`.
+          #
+          # Instead of playing with `nix-shell`s, just extract the headers.
+          cp -r /nix/store/*-libelf-*/include /usr/
+
+      - if: matrix.container == 'opensuse/tumbleweed'
+        run: |
+          zypper --non-interactive install bash bc gawk diffutils findutils flex bison libelf-devel git libopenssl-devel make llvm clang rust rust-bindgen cargo
+
+          # openSUSE Tumbleweed does not seem to package the `rust-src` component,
+          # so set it up manually.
+          rust_version=$(rustc --version | awk '{ print $2 }')
+          curl -L "https://static.rust-lang.org/dist/rust-src-$rust_version.tar.gz" |
+            tar -xzf - -C "$(rustc --print sysroot)/lib" \
+              "rust-src-$rust_version/rust-src/lib/" \
+              --strip-components=3
+
+      # Setup Git (in case patches are applied).
+      - run: |
+          git config --global user.email ""
+          git config --global user.name "CI"
+
+      # Setup LLVM.
+      - if: startsWith(matrix.toolchain, 'llvm-') && endsWith(matrix.toolchain, '-llvm-apt')
+        run: |
+          apt-get -y purge llvm clang lld libclang*
+          apt-get -y autoremove
+
+          apt-get -y update
+          apt-get -y --no-install-recommends install gpg gpg-agent software-properties-common
+          curl --proto '=https' --tlsv1.2 --no-progress-meter --fail https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+          add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} main'
+          apt-get -y update
+          apt-get -y --no-install-recommends install llvm-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} clang-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} lld-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }}
+
+          # Using symlinks here to pick only the needed pieces.
+          ln -s /usr/bin/clang-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/clang
+          ln -s /usr/bin/clang++-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/clang++
+          ln -s /usr/bin/ld.lld-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/ld.lld
+          ln -s /usr/bin/llvm-ar-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/llvm-ar
+          ln -s /usr/bin/llvm-nm-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/llvm-nm
+          ln -s /usr/bin/llvm-strip-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/llvm-strip
+          ln -s /usr/bin/llvm-objcopy-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/llvm-objcopy
+          ln -s /usr/bin/llvm-objdump-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/llvm-objdump
+          ln -s /usr/bin/llvm-readelf-${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }} /usr/bin/llvm-readelf
+
+      # LoongArch requires LLVM 18 (there seems to be no easy way to make the matrix that we would
+      # need, so just add the condition it here for the time being).
+      - if: (startsWith(matrix.toolchain, 'llvm-') && endsWith(matrix.toolchain, '-kernel')) || matrix.arch == 'loongarch64'
+        run: |
+          apt-get -y purge llvm clang lld libclang*
+          apt-get -y autoremove
+
+          apt-get -y update
+          # `xz-utils` for `tar` below.
+          apt-get -y --no-install-recommends install xz-utils
+          # The dynamic dependencies of the toolchain (see website).
+          apt-get -y --no-install-recommends install libc6 libgcc-s1 libicu70 liblzma5 libstdc++6 libxml2 libzstd1 zlib1g
+          curl --proto '=https' --tlsv1.2 --no-progress-meter --fail https://mirrors.edge.kernel.org/pub/tools/llvm/files/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64.tar.xz | tar --extract --verbose --xz
+
+          # Using symlinks here to pick only the needed pieces.
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/clang /usr/bin/clang
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/clang++ /usr/bin/clang++
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/ld.lld /usr/bin/ld.lld
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/llvm-ar /usr/bin/llvm-ar
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/llvm-nm /usr/bin/llvm-nm
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/llvm-strip /usr/bin/llvm-strip
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/llvm-objcopy /usr/bin/llvm-objcopy
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/llvm-objdump /usr/bin/llvm-objdump
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/bin/llvm-readelf /usr/bin/llvm-readelf
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-x86_64/lib/libclang.so /usr/lib/libclang.so
+
+      # LLVM+Rust kernel.org combined toolchains are very similar to the LLVM kernel.org ones. The
+      # major difference is that they require a Rust version (see configuration above).
+      - if: startsWith(matrix.toolchain, 'llvmcombined-')
+        run: |
+          apt-get -y purge llvm clang lld libclang*
+          apt-get -y autoremove
+
+          apt-get -y update
+          # `xz-utils` for `tar` below.
+          apt-get -y --no-install-recommends install xz-utils
+          # The dynamic dependencies of the toolchain (see website).
+          apt-get -y --no-install-recommends install libc6 libgcc-s1 libicu70 liblzma5 libstdc++6 libxml2 libzstd1 zlib1g
+          curl --proto '=https' --tlsv1.2 --no-progress-meter --fail https://mirrors.edge.kernel.org/pub/tools/llvm/rust/files/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64.tar.xz | tar --extract --verbose --xz
+
+          # Using symlinks here to pick only the needed pieces.
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/clang /usr/bin/clang
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/clang++ /usr/bin/clang++
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/ld.lld /usr/bin/ld.lld
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/llvm-ar /usr/bin/llvm-ar
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/llvm-nm /usr/bin/llvm-nm
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/llvm-strip /usr/bin/llvm-strip
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/llvm-objcopy /usr/bin/llvm-objcopy
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/llvm-objdump /usr/bin/llvm-objdump
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/bin/llvm-readelf /usr/bin/llvm-readelf
+          ln -s $PWD/llvm-${{ env.LLVM_TOOLCHAIN_VERSION }}-rust-${{ env.COMBINED_TOOLCHAIN_RUST_VERSION }}-x86_64/lib/libclang.so /usr/lib/libclang.so
+
+      - run: make --version
+
+      - run: clang --version
+
+      # Per-architecture setup (that should eventually be done in the container).
+      - if: matrix.arch == 'loongarch64'
+        run: |
+          # TODO: boot tests.
+          # git clone --depth 1 https://github.com/yangxiaojuan-loongson/qemu-binary.git
+
+          # LoongArch `defconfig` uses `hexdump` in `drivers/firmware/efi/libstub/Makefile.zboot`.
+          apt-get -y --no-install-recommends install bsdextrautils
+
+      # Checkout CI tree (using `actions/checkout` instead of `git clone` to support private repository use).
+      - if: matrix.container != 'nixos/nix'
+        uses: actions/checkout@v4
+        with:
+          path: ci
+
+      # Do it manually NixOS (the GitHub Actions-injected `node` binaries
+      # do not work, see https://nixos.wiki/wiki/Packaging/Binaries). Perhaps
+      # `nix-ld` would work.
+      # TODO: download the proper commit/ref using GitHub's "default environment variables"
+      # from https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables.
+      - if: matrix.container == 'nixos/nix'
+        run: git clone --depth 1 https://github.com/ojeda/ciq.git ci
+
+      # Checkout Linux source tree.
+      - if: matrix.tree == 'next'
+        run: git clone --depth 1                                                    https://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git linux
+      - if: startsWith(matrix.tree, 'rust-')
+        run: git clone --depth 1 --branch ${{ matrix.tree }}                        https://github.com/Rust-for-Linux/linux.git linux
+      - if: matrix.tree == 'torvalds'
+        run: git clone --depth 1                                                    https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git linux
+      - if: startsWith(matrix.tree, 'stable/')
+        run: git clone --depth 1 --branch $(echo ${{ matrix.tree }} | cut -d/ -f2-) https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git linux
+      - if: startsWith(matrix.tree, 'stable-rc/')
+        run: git clone --depth 1 --branch $(echo ${{ matrix.tree }} | cut -d/ -f2-) https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable-rc.git linux
+      - if: startsWith(matrix.tree, 'ojeda/')
+        run: git clone --depth 1 --branch $(echo ${{ matrix.tree }} | cut -d/ -f2-) https://github.com/ojeda/linux.git linux
+
+      # Report commit being used (before patching).
+      - run: git -C linux show --no-patch
+
+      # Patch Linux source tree (if needed, for temporary reasons).
+      # - if: matrix.arch == 'loongarch64'
+      #   run: |
+      #     # FIXME: https://lore.kernel.org/linux-media/20240111-dvb-mxl5xx-move-structs-off-stack-v1-1-ca4230e67c11@kernel.org/
+      #     git -C linux am ../ci/0001-media-mxl5xx-Move-xpt-structures-off-stack.patch
+
+      # Setup `rustup`.
+      - if: startsWith(matrix.rust, 'rustup')
+        run: |
+          curl --proto '=https' --tlsv1.2 --no-progress-meter --fail --output rustup.sh https://sh.rustup.rs
+          sh rustup.sh -y --no-modify-path --default-toolchain none
+
+      # Set up Rust's `PATH`.
+      #
+      # This needs to be done in all cases (i.e. not just for `rustup` but for other toolchains
+      # too), and needs to be done before using `rustup` to install Rust since `rustup` itself is
+      # installed in Cargo's `bin` folder too (i.e. even before Cargo is installed).
+      #
+      # For some reason, openSUSE Tumbleweed gets confused with this:
+      #
+      # ```
+      #  OCI runtime exec failed: exec failed: unable to start container process: exec: "sh": executable file not found in $PATH: unknown
+      # ```
+      #
+      # It is anyway only needed for the default image and Gentoo (since we build
+      # `bindgen` there with Cargo), so do that.
+      - if: matrix.rust != 'disabled' && (matrix.container == 'ghcr.io/rust-for-linux/ci' || matrix.container == 'gentoo/stage3')
+        run: echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      # Setup Rust.
+      - if: matrix.rust == 'rustup'
+        run: |
+          # https://static.rust-lang.org/manifests.txt is only updated once a week, so we cannot rely on it.
+          if curl --proto '=https' --tlsv1.2 --no-progress-meter --fail --head https://static.rust-lang.org/dist/channel-rust-$(linux/scripts/min-tool-version.sh rustc).toml
+          then
+            echo "Rust $(linux/scripts/min-tool-version.sh rustc) is a stable release."
+            rust_version_to_install=$(linux/scripts/min-tool-version.sh rustc)
+          elif curl --proto '=https' --tlsv1.2 --no-progress-meter --fail --head https://dev-static.rust-lang.org/dist/channel-rust-$(linux/scripts/min-tool-version.sh rustc).toml
+          then
+            echo "Rust $(linux/scripts/min-tool-version.sh rustc) is a pre-release (i.e. a stable release in 'dev-static')."
+            rust_version_to_install=$(linux/scripts/min-tool-version.sh rustc)
+            export RUSTUP_DIST_SERVER=https://dev-static.rust-lang.org
+          elif curl --proto '=https' --tlsv1.2 --no-progress-meter --fail https://static.rust-lang.org/dist/channel-rust-beta.toml | grep -F $(linux/scripts/min-tool-version.sh rustc)
+          then
+            echo "Rust $(linux/scripts/min-tool-version.sh rustc) is in the beta release channel."
+            rust_version_to_install=beta
+          elif curl --proto '=https' --tlsv1.2 --no-progress-meter --fail https://static.rust-lang.org/dist/channel-rust-nightly.toml | grep -F $(linux/scripts/min-tool-version.sh rustc)
+          then
+            echo "Rust $(linux/scripts/min-tool-version.sh rustc) is in the nightly release channel."
+            echo "This should not happen."
+            exit 1
+          else
+            echo "Rust $(linux/scripts/min-tool-version.sh rustc) is unknown."
+            echo "This should not happen."
+            exit 1
+          fi
+
+          rustup toolchain install $rust_version_to_install \
+            --profile minimal \
+            --component rust-src \
+            --component rustfmt \
+            --component clippy
+
+          rustup default $rust_version_to_install
+
+      - if: matrix.rust == 'rustup-stable' || matrix.rust == 'rustup-beta' || matrix.rust == 'rustup-nightly'
+        run: |
+          rustup toolchain install $(echo ${{ matrix.rust }} | cut -d- -f2-) \
+            --profile minimal \
+            --component rust-src \
+            --component rustfmt \
+            --component clippy
+
+          rustup default $(echo ${{ matrix.rust }} | cut -d- -f2-)
+
+      - if: startsWith(matrix.rust, 'llvmcombined-')
+        run: |
+          apt-get -y update
+          # `xz-utils` for `tar` below.
+          apt-get -y --no-install-recommends install xz-utils
+
+          # If this was already used above for picking LLVM from the combined toolchain, then it will still work (overwriting without failure).
+          curl --proto '=https' --tlsv1.2 --no-progress-meter --fail https://mirrors.edge.kernel.org/pub/tools/llvm/rust/files/llvm-${{ env.COMBINED_RUST_LLVM_VERSION }}-rust-${{ env.RUST_TOOLCHAIN_VERSION }}-x86_64.tar.xz | tar --extract --verbose --xz
+
+          # Using symlinks here to pick only the needed pieces.
+          ln -s $PWD/llvm-${{ env.COMBINED_RUST_LLVM_VERSION }}-rust-${{ env.RUST_TOOLCHAIN_VERSION }}-x86_64/bin/cargo /usr/bin/cargo
+          ln -s $PWD/llvm-${{ env.COMBINED_RUST_LLVM_VERSION }}-rust-${{ env.RUST_TOOLCHAIN_VERSION }}-x86_64/bin/clippy-driver /usr/bin/clippy-driver
+          ln -s $PWD/llvm-${{ env.COMBINED_RUST_LLVM_VERSION }}-rust-${{ env.RUST_TOOLCHAIN_VERSION }}-x86_64/bin/rustc /usr/bin/rustc
+          ln -s $PWD/llvm-${{ env.COMBINED_RUST_LLVM_VERSION }}-rust-${{ env.RUST_TOOLCHAIN_VERSION }}-x86_64/bin/rustdoc /usr/bin/rustdoc
+          ln -s $PWD/llvm-${{ env.COMBINED_RUST_LLVM_VERSION }}-rust-${{ env.RUST_TOOLCHAIN_VERSION }}-x86_64/bin/rustfmt /usr/bin/rustfmt
+
+      - if: matrix.rust != 'disabled'
+        run: rustc --version --verbose
+
+      # Setup `rustc_codegen_gcc`.
+      - if: matrix.toolchain == 'rustc_codegen_gcc'
+        run: |
+          apt-get -y purge cpp gcc
+          curl --proto '=https' --tlsv1.2 --no-progress-meter --fail --location --remote-name https://github.com/antoyo/gcc/releases/download/master-6351b299c/gcc-13.deb
+          dpkg --install gcc-13.deb
+
+          git clone --depth 1 --branch $(linux/scripts/min-tool-version.sh rustc) https://github.com/rust-lang/rust.git rust-repo
+
+          echo "MAKE_KRUSTFLAGS=KRUSTFLAGS=-Zcodegen-backend=$PWD/rust-repo/compiler/rustc_codegen_gcc/target/release/librustc_codegen_gcc.so" >> $GITHUB_ENV
+
+          cd rust-repo/compiler/rustc_codegen_gcc
+          echo /usr/lib > gcc_path
+          sed -i '/channel/d' rust-toolchain
+          export RUSTC_BOOTSTRAP=1
+          ./y.sh prepare --only-libcore
+          ./y.sh build --release --features master
+
+      # Setup `bindgen`.
+      # TODO: from kernel.org package too?
+      - if: matrix.rust != 'rustup-nightly'
+        run: |
+          # When using nightly Rust, crates like `proc_macro2` (dependency of `bindgen`) may use
+          # unstable features, which in turn means it may not build properly if we are using old
+          # versions of the crate due to `--locked`.
+          #
+          # Thus allow Cargo to use the latest versions if we are using nightly Rust.
+          #
+          # Another option could be to use another `rustc` (i.e. a stable one) just for compiling
+          # `bindgen`.
+          echo "BINDGEN_LOCKED=--locked" >> $GITHUB_ENV
+
+      - if: matrix.rust != 'disabled' && matrix.bindgen == 'cargo'
+        run: |
+          # The `bindgen` package contained the CLI tool in the past, and we only ever used 0.56.0.
+          # Starting with Linux 6.6, the versions of the CLI tool we use are published under `bindgen-cli`.
+          if [ "$(linux/scripts/min-tool-version.sh bindgen)" = "0.56.0" ]
+          then
+            cargo install ${{ env.BINDGEN_LOCKED }} --version $(linux/scripts/min-tool-version.sh bindgen) bindgen
+          else
+            cargo install ${{ env.BINDGEN_LOCKED }} --version $(linux/scripts/min-tool-version.sh bindgen) bindgen-cli
+          fi
+
+      - if: matrix.rust != 'disabled' && matrix.bindgen == 'cargo-latest'
+        run: cargo install ${{ env.BINDGEN_LOCKED }} bindgen-cli
+
+      - if: matrix.rust != 'disabled'
+        run: bindgen --version --verbose
+
+      # Setup `busybox`.
+      - if: env.BOOT_TEST == 'true'
+        run: cp /root/busybox-${{ matrix.arch }} /root/busybox
+
+      # Setup `cpio`.
+      #
+      # Needed for `CONFIG_IKHEADERS=y`, which is enabled in loongarch, i.e. for
+      # `kernel/gen_kheaders.sh`.
+      - if: matrix.container == 'ghcr.io/rust-for-linux/ci'
+        run: |
+          apt-get -y update
+          apt-get -y --no-install-recommends install cpio
+
+      # Prepare build output folder.
+      - if: matrix.output != 'src'
+        run: |
+          mkdir ${{ env.OUTPUT_DIR }}
+          sed -i 's:linux/samples/rust/:${{ env.OUTPUT_DIR }}samples/rust/:' ci/qemu-initramfs.desc
+
+      # Remove Rust-related lines from the QEMU description.
+      - if: matrix.rust == 'disabled'
+        run: sed -i '/rust/d' ci/qemu-initramfs.desc
+
+      # Make sure Rust is available.
+      - if: matrix.rust != 'disabled'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} rustavailable
+
+      # Test the `rust_is_available.sh` script.
+      - if: matrix.rust != 'disabled'
+        run: cd linux && scripts/rust_is_available_test.py
+
+      # Configure kernel.
+      - run: cp ci/*.config linux/kernel/configs/
+
+      - run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} defconfig
+
+      - if: matrix.arch == 'riscv32'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} 32-bit.config
+
+      - if: matrix.rust != 'disabled'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} rfl-${{ matrix.arch }}.config rfl-rust.config
+
+      - if: matrix.rust != 'disabled' && matrix.config == 'defconfig+debug'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} rfl-debug.config
+
+      # Dump kernel configuration before the build and save it.
+      - run: |
+          cat ${{ env.OUTPUT_DIR }}.config
+          cp ${{ env.OUTPUT_DIR }}.config config-before
+
+      # Build.
+      - run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }}
+
+      # Check the kernel configuration did not change, just in case.
+      - run: diff -u config-before ${{ env.OUTPUT_DIR }}.config
+
+      # Check the toolchain is the expected one.
+      - if: matrix.toolchain == 'llvm' && matrix.arch != 'loongarch64'
+        run: grep '^CONFIG_CC_VERSION_TEXT="Ubuntu clang.*ubuntu' ${{ env.OUTPUT_DIR }}.config
+      - if: (startsWith(matrix.toolchain, 'llvm') && endsWith(matrix.toolchain, '-kernel')) || matrix.arch == 'loongarch64'
+        run: grep '^CONFIG_CC_VERSION_TEXT="ClangBuiltLinux clang version ${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }}' ${{ env.OUTPUT_DIR }}.config
+      - if: startsWith(matrix.toolchain, 'llvm') && endsWith(matrix.toolchain, '-llvm-apt')
+        run: grep '^CONFIG_CC_VERSION_TEXT="Ubuntu clang version ${{ env.LLVM_TOOLCHAIN_VERSION_MAJOR }}' ${{ env.OUTPUT_DIR }}.config
+      - if: matrix.toolchain == 'rustc_codegen_gcc'
+        run: grep '^CONFIG_CC_VERSION_TEXT="gcc (GCC) ' ${{ env.OUTPUT_DIR }}.config
+
+      # Make sure certain key configs were enabled.
+      - if: matrix.rust != 'disabled'
+        run: |
+          grep -F 'CONFIG_RUST=y'   ${{ env.OUTPUT_DIR }}.config
+          grep -F 'CONFIG_WERROR=y' ${{ env.OUTPUT_DIR }}.config
+
+      # Report other data (general).
+      - run: |
+          ls -l
+
+          ls -l \
+            ${{ env.OUTPUT_DIR }}vmlinux \
+            ${{ env.OUTPUT_DIR }}${{ env.IMAGE_PATH }}
+
+          ci/size.sh \
+            ${{ env.OUTPUT_DIR }}vmlinux
+
+      # Report other data (Rust).
+      - if: matrix.rust != 'disabled'
+        run: |
+          ls -l \
+            ${{ env.OUTPUT_DIR }}samples/rust/*.o \
+            ${{ env.OUTPUT_DIR }}samples/rust/*.ko \
+            ${{ env.OUTPUT_DIR }}rust/*.o
+
+          ci/size.sh \
+            ${{ env.OUTPUT_DIR }}samples/rust/*.o \
+            ${{ env.OUTPUT_DIR }}samples/rust/*.ko \
+            ${{ env.OUTPUT_DIR }}rust/*.o
+
+      # Check `.comment` section.
+      - if: matrix.rust != 'disabled'
+        run: |
+          if [ $(rustc --version | cut -d'.' -f2) -ge 73 ]; then
+            llvm-readelf --string-dump .comment ${{ env.OUTPUT_DIR }}rust/core.o
+            llvm-objcopy --dump-section .comment=comment ${{ env.OUTPUT_DIR }}rust/core.o
+            grep --text -F "rustc version $(rustc --version | cut -d' ' -f2-)" comment
+            if ${{ matrix.toolchain == 'rustc_codegen_gcc' && 'true' || 'false' }}; then
+              grep --text 'libgccjit' comment
+              grep --text 'GCC: ' comment
+            fi
+          else
+            echo 'Skipping since `rustc` < 1.73.0.'
+          fi
+
+      # Build out-of-tree module.
+      # TODO: Run it too.
+      - if: matrix.rust != 'disabled'
+        run: |
+          # Ideally we would use e.g. `git -C linux merge-base --is-ancestor 5ab560ce12ed HEAD`, but
+          # that would require the entire repository just for this. We could perhaps have tags (or
+          # branches) in the out-of-tree repository for each kernel release, but that one is
+          # currently just meant as a sample, so let's keep it here.
+          case ${{ matrix.tree }} in
+            # Since 6.1 (i.e. the oldest one), use commit 2fcc7219e4f3 ("Fix build for Linux 6.1").
+            *6.1*)             out_of_tree_commit=2fcc7219e4f3 ;;
+
+            # Since commit b13c9880f909 ("rust: macros: take string literals in `module!`") upstream,
+            # use commit e36fc14c01e3 ("Update for Linux 6.2").
+            *6.6*|*6.8*|*6.9*) out_of_tree_commit=e36fc14c01e3 ;;
+
+            # Since commit 5ab560ce12ed ("rust: alloc: update `VecExt` to take allocation flags") upstream,
+            # use commit 9872947486bb ("rust_out_of_tree: use the new allocation APIs").
+            *)                 out_of_tree_commit=9872947486bb ;;
+          esac
+
+          git clone https://github.com/Rust-for-Linux/rust-out-of-tree-module.git
+          git -C rust-out-of-tree-module checkout $out_of_tree_commit
+
+          make -C rust-out-of-tree-module ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} ${{ env.MAKE_OUT_OF_TREE_KDIR }}
+
+      # Run in QEMU.
+      - if: env.BOOT_TEST == 'true'
+        run: |
+          ${{ env.OUTPUT_DIR }}usr/gen_init_cpio ci/qemu-initramfs.desc > rootfs.cpio
+
+          qemu-system-${{ env.QEMU_ARCH }} \
+            ${{ env.QEMU_ARGS }} \
+            -kernel ${{ env.OUTPUT_DIR }}${{ env.IMAGE_PATH }} \
+            -initrd rootfs.cpio \
+            -smp 2 \
+            -nographic \
+            -vga none \
+            -no-reboot \
+            | sed 's:\r$::' \
+            | tee qemu-stdout
+
+      # Check QEMU log output.
+      - if: matrix.rust != 'disabled' && env.BOOT_TEST == 'true'
+        run: |
+          grep '] rust_minimal: Rust minimal sample (init)$'     qemu-stdout
+          grep '] rust_minimal: Am I built-in? false$'           qemu-stdout
+          grep '] rust_minimal: My numbers are \[72, 108, 200]$' qemu-stdout
+          grep '] rust_minimal: Rust minimal sample (exit)$'     qemu-stdout
+
+          grep '] rust_out_of_tree: Rust out-of-tree sample (init)$' qemu-stdout
+          grep '] rust_out_of_tree: My numbers are \[72, 108, 200]$' qemu-stdout
+          grep '] rust_out_of_tree: Rust out-of-tree sample (exit)$' qemu-stdout
+
+      # Linux 6.1 does not have `rust_print`.
+      - if: ${{ matrix.rust != 'disabled' && env.BOOT_TEST == 'true' && ! contains(matrix.tree, '6.1') }}
+        run: |
+          grep '] rust_print: Rust printing macros sample (init)$'       qemu-stdout
+
+          grep '] rust_print: Emergency message (level 0) without args$' qemu-stdout
+          grep '] rust_print: Alert message (level 1) without args$'     qemu-stdout
+          grep '] rust_print: Critical message (level 2) without args$'  qemu-stdout
+          grep '] rust_print: Error message (level 3) without args$'     qemu-stdout
+          grep '] rust_print: Warning message (level 4) without args$'   qemu-stdout
+          grep '] rust_print: Notice message (level 5) without args$'    qemu-stdout
+          grep '] rust_print: Info message (level 6) without args$'      qemu-stdout
+          grep '] rust_print: A line that is continued without args$'    qemu-stdout
+
+          grep '] rust_print: Emergency message (level 0) with args$'    qemu-stdout
+          grep '] rust_print: Alert message (level 1) with args$'        qemu-stdout
+          grep '] rust_print: Critical message (level 2) with args$'     qemu-stdout
+          grep '] rust_print: Error message (level 3) with args$'        qemu-stdout
+          grep '] rust_print: Warning message (level 4) with args$'      qemu-stdout
+          grep '] rust_print: Notice message (level 5) with args$'       qemu-stdout
+          grep '] rust_print: Info message (level 6) with args$'         qemu-stdout
+          grep '] rust_print: A line that is continued with args$'       qemu-stdout
+
+      # Linux 6.1 does not have KUnit `rustdoc` tests.
+      - if: ${{ matrix.rust != 'disabled' && env.BOOT_TEST == 'true' && matrix.config == 'defconfig+debug' && ! contains(matrix.tree, '6.1') }}
+        run: grep '] ok 1 rust_doctests_kernel$' qemu-stdout
+
+      - if: matrix.rust != 'disabled' && env.BOOT_TEST == 'true'
+        run: |
+          grep -i '\bpanic\b'     qemu-stdout && exit 1
+          grep -i '\boops\b'      qemu-stdout && exit 1
+          grep -i '\btaint\b'     qemu-stdout && exit 1
+          grep -i '\bfault\b'     qemu-stdout && exit 1
+          grep -i '\bcorrupted\b' qemu-stdout && exit 1
+
+          grep -i '\btrace\b'     qemu-stdout |
+              grep -Fv '] RCU Tasks Trace:' &&
+              exit 1
+
+          grep -i '\bbug\b'       qemu-stdout |
+              grep -Fv '" and report a bug' &&
+              exit 1
+
+          grep -i '\berror\b'     qemu-stdout |
+              grep -Fv 'message (level 3)' |
+              grep -Fv 'regulatory.db' &&
+              exit 1
+
+          grep -i '\bwarning\b'   qemu-stdout |
+              grep -Fv 'message (level 4)' &&
+              exit 1
+
+          # Required given the way tests are done above.
+          exit 0
+
+      # Re-build with Clippy.
+      #
+      # openSUSE Tumbleweed does not seem to provide Clippy.
+      - if: matrix.rust != 'disabled' && matrix.container != 'opensuse/tumbleweed'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} CLIPPY=1
+
+      # Generate Rust documentation.
+      - if: matrix.rust != 'disabled'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} rustdoc
+
+      # Check `#[test]`s.
+      - if: matrix.rust != 'disabled'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} rusttest
+
+      # Check formatting.
+      #
+      # openSUSE Tumbleweed does not seem to provide `rustfmt`.
+      - if: matrix.rust != 'disabled' && matrix.container != 'opensuse/tumbleweed'
+        run: make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} rustfmtcheck
+
+      # Test single targets.
+      - if: matrix.rust != 'disabled'
+        run: |
+          rm ${{ env.OUTPUT_DIR }}samples/rust/rust_minimal.o
+          make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} samples/rust/rust_minimal.o
+          file ${{ env.OUTPUT_DIR }}samples/rust/rust_minimal.o | grep -F 'ELF'
+
+      - if: matrix.rust != 'disabled'
+        run: |
+          make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} samples/rust/rust_minimal.rsi
+          grep -F '#![feature(prelude_import)]' ${{ env.OUTPUT_DIR }}samples/rust/rust_minimal.rsi
+
+      - if: matrix.rust != 'disabled'
+        run: |
+          make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} samples/rust/rust_minimal.s
+          grep -F '.text'                       ${{ env.OUTPUT_DIR }}samples/rust/rust_minimal.s
+
+      - if: matrix.rust != 'disabled' && startsWith(matrix.toolchain, 'llvm')
+        run: |
+          make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} samples/rust/rust_minimal.ll
+          grep -F '; ModuleID'                  ${{ env.OUTPUT_DIR }}samples/rust/rust_minimal.ll
+
+      # Test Rust host programs.
+      - if: matrix.rust != 'disabled'
+        run: ${{ env.OUTPUT_DIR }}samples/rust/hostprogs/single | grep -F 'The number is 42.'
+
+      # Test Rust kselftests (run in QEMU with Ubuntu `debootstrap`).
+      - if: matrix.rust != 'disabled' && matrix.arch == 'x86_64' && matrix.container == 'ghcr.io/rust-for-linux/ci'
+        run: |
+          if [ ! -e linux/tools/testing/selftests/rust ]; then
+            echo 'Skipping kselftests since they are not present in the tree.'
+            exit 0
+          fi
+
+          # Re-build with the expected config.
+          cp linux/tools/testing/selftests/rust/config linux/kernel/configs/kselftests-rust.config
+          make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} kselftests-rust.config
+          make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }}
+
+          apt-get -y update
+          apt-get -y --no-install-recommends install debootstrap rsync cpio kmod
+
+          # `bash` already included in `minbase`.
+          # `kmod` included for `modprobe`.
+          # `systemd-sysv` included for `reboot`.
+          #
+          # `make` is not needed since we are packaging the tests.
+          debootstrap --variant=minbase --include=kmod,systemd-sysv jammy rootfs
+
+          cp ci/init rootfs/
+
+          make -C linux ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} INSTALL_MOD_PATH=$PWD/rootfs modules_install
+
+          make -C linux/tools/testing/selftests ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} install TARGETS=rust INSTALL_PATH=$PWD/rootfs/kselftests
+
+          (cd rootfs && find . | cpio --create --format=newc) > rootfs-debootstrap.cpio
+
+          # `-m 1G` required due to the big rootfs in this case.
+          qemu-system-${{ env.QEMU_ARCH }} \
+            ${{ env.QEMU_ARGS }} \
+            -kernel ${{ env.OUTPUT_DIR }}${{ env.IMAGE_PATH }} \
+            -initrd rootfs-debootstrap.cpio \
+            -m 1G \
+            -smp 2 \
+            -nographic \
+            -vga none \
+            -no-reboot \
+            | sed 's:\r$::' \
+            | tee qemu-stdout-debootstrap
+
+          grep '^# ok 1 rust_minimal$'                                      qemu-stdout-debootstrap
+          grep '^# ok 2 rust_print$'                                        qemu-stdout-debootstrap
+          grep '^# # Totals: pass:2 fail:0 xfail:0 xpass:0 skip:0 error:0$' qemu-stdout-debootstrap
+          grep '^ok 1 selftests: rust: test_probe_samples.sh$'              qemu-stdout-debootstrap
