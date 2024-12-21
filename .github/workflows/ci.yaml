@@ -1552,6 +1552,7 @@ jobs:
 
           git clone --depth 1 --branch $(linux/scripts/min-tool-version.sh rustc) https://github.com/rust-lang/rust.git rust-repo
 
+          # TODO: we should add to the flags, rather than replace.
           echo "MAKE_KRUSTFLAGS=KRUSTFLAGS=-Zcodegen-backend=$PWD/rust-repo/compiler/rustc_codegen_gcc/target/release/librustc_codegen_gcc.so" >> $GITHUB_ENV
 
           cd rust-repo/compiler/rustc_codegen_gcc
@@ -1943,9 +1944,17 @@ jobs:
       # Re-build with Clippy.
       #
       # After this, everything goes with `CLIPPY=1`.
+      #
+      # For stable kernels, however, we do not currently backport `CLIPPY=1` fixes, but we want to still test this and get the report of possible warnings. So we want to avoid denying the Rust warnings here -- if we got to this point, there were no non-Clippy warnings since `CONFIG_WERROR` is enabled, thus we should not be getting any non-Clippy warning here, unless there is somehow a change in behavior.
+      #
+      # In order to do that, we could disable `CONFIG_WERROR`, but that is a heavy change (i.e. kernel reconfig). We could also simply avoid `CLIPPY=1` here, which is a simple change, but then we are not testing Clippy builds at all in stable. Instead, let's use `-Wwarnings` via `KRUSTFLAGS` which overrides the `-Dwarnings` that is set by `CONFIG_WERROR`. That way we don't need to change the kernel config and yet we test with Clippy.
+      #
+      # We only do so for this step, i.e. the default target, since we still want to error on warnings in other targets.
+      #
+      # Also done for kselftests.
       - if: matrix.rust != 'disabled'
         shell: bash # TODO: remove (currently for `pipefail`).
-        run: set -o pipefail && make -C linux ${{ env.MAKE_TOOLS }} ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} V=2 CLIPPY=1 2>&1 | tee --append build-stdout-and-stderr
+        run: set -o pipefail && make -C linux ${{ env.MAKE_TOOLS }} ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ startsWith(matrix.tree, 'stable') && 'KRUSTFLAGS=-Wwarnings' || env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} V=2 CLIPPY=1 2>&1 | tee --append build-stdout-and-stderr
 
       # Generate Rust documentation.
       - if: matrix.rust != 'disabled'
@@ -2016,7 +2025,7 @@ jobs:
           # Re-build with the expected config.
           cp linux/tools/testing/selftests/rust/config linux/kernel/configs/kselftests-rust.config
           make -C linux ${{ env.MAKE_TOOLS }} ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} V=2 CLIPPY=1 kselftests-rust.config
-          make -C linux ${{ env.MAKE_TOOLS }} ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} V=2 CLIPPY=1
+          make -C linux ${{ env.MAKE_TOOLS }} ${{ env.MAKE_ARCH }} ${{ env.MAKE_CROSS_COMPILE }} ${{ env.MAKE_TOOLCHAIN }} ${{ env.MAKE_OUTPUT }} ${{ env.MAKE_OUTPUT }} ${{ startsWith(matrix.tree, 'stable') && 'KRUSTFLAGS=-Wwarnings' || env.MAKE_KRUSTFLAGS }} ${{ env.JOBS }} V=2 CLIPPY=1
 
           apt-get -y update
           apt-get -y --no-install-recommends install debootstrap rsync cpio kmod
